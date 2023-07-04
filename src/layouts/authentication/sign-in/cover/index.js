@@ -13,7 +13,7 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useState } from "react";
+import React, { useState } from "react";
 
 // react-router-dom components
 import { Link } from "react-router-dom";
@@ -33,10 +33,45 @@ import CoverLayout from "layouts/authentication/components/CoverLayout";
 // Images
 import curved9 from "assets/images/curved-images/curved9.jpg";
 
+// CUSTOM IMPORT
+
+import PropTypes from 'prop-types';
+import axios from 'axios';
+
+async function loginUser(credentials) {
+    try {
+      const res = await axios.post('https://uat-ant.bmcorp.fr/login', credentials);
+      return { token: res.data.access_token, error: null };
+    } catch (err) {
+      let errorMessage = err.message;
+      if (err.response) {
+        // Si le serveur a répondu avec un statut autre que 2xx, err.response contient ces informations.
+        errorMessage = err.response.data.message; 
+      }
+      return { token: null, error: errorMessage };
+    }
+}
+
 function Cover() {
+  const [username, setUserName] = useState();
+  const [password, setPassword] = useState();
   const [rememberMe, setRememberMe] = useState(true);
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    const response = await loginUser({
+      username,
+      password
+    });
+    if(response.error) {
+      setError(response.error);
+    } else {
+      setToken(response.token);
+      window.location.reload();
+    }
+  }
 
   return (
     <CoverLayout
@@ -44,14 +79,14 @@ function Cover() {
       description="Enter your email and password to sign in"
       image={curved9}
     >
-      <SoftBox component="form" role="form">
+      <SoftBox component="form" role="form" onSubmit={handleSubmit}>
         <SoftBox mb={2} lineHeight={1.25}>
           <SoftBox mb={1} ml={0.5}>
             <SoftTypography component="label" variant="caption" fontWeight="bold">
               Email
             </SoftTypography>
           </SoftBox>
-          <SoftInput type="email" placeholder="Email" />
+          <SoftInput type="email" placeholder="Email" onChange={e => setUserName(e.target.value)} />
         </SoftBox>
         <SoftBox mb={2} lineHeight={1.25}>
           <SoftBox mb={1} ml={0.5}>
@@ -59,7 +94,7 @@ function Cover() {
               Password
             </SoftTypography>
           </SoftBox>
-          <SoftInput type="password" placeholder="Password" />
+          <SoftInput type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} />
         </SoftBox>
         <SoftBox display="flex" alignItems="center">
           <Switch checked={rememberMe} onChange={handleSetRememberMe} />
@@ -96,5 +131,9 @@ function Cover() {
     </CoverLayout>
   );
 }
+
+Cover.propTypes = {
+    setToken: PropTypes.func.isRequired
+  };
 
 export default Cover;
